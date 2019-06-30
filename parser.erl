@@ -1,6 +1,7 @@
 -module(parser).
 -export([parse/1, parse_and_scan/1, format_error/1]).
--file("parser.yrl", 38).
+-file("parser.yrl", 37).
+
 
 %unwrap({_,_,V}) -> V.
 
@@ -214,7 +215,7 @@ yecctoken2string(Other) ->
 
 
 
--file("parser.erl", 217).
+-file("parser.erl", 218).
 
 -dialyzer({nowarn_function, yeccpars2/7}).
 yeccpars2(0=S, Cat, Ss, Stack, T, Ts, Tzr) ->
