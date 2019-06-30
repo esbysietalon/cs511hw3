@@ -51,7 +51,6 @@ boolVal2Bool({bool, B}) ->
 
 -spec valueOf(expType(),envType()) -> valType().
 valueOf(Exp,Env) ->
-	io:format("~w~n", [Exp]),
 	case atomize(Exp, Env) of
 		{packaged, O, D} ->
 			OUTPUT = O,
@@ -82,17 +81,22 @@ getProc({procExp, {id, _, V}, FUNCEXP}, Env) ->
 		{proc, V, FUNCEXP, Env}.
 atomize(Exp, Env) ->
 	case Exp of
-		{packaged, GenExp, Env} ->
-			io:format("unpackaging~n", []),
+		{packaged, GenExp, _} ->
+			%io:format("unpackaging~n", []),
 			atomize(GenExp, Env);
 		{letExp, {id, _N0, V0}, VarVal, InArgs} ->
 			Env0 = env:add(Env, V0, atomize(VarVal, Env)),
 			atomize(InArgs, Env0);
+		{isZeroExp, ARGEXP} ->
+			case atomize(ARGEXP, Env) of
+				0 -> true;
+				_ -> false
+			end;
 		{procExp, IDEXP, FUNCEXP} ->
 			%proc already stores this well
 			{packaged, Exp, Env};
 		{appExp, FUNCID, INPUT} ->
-			atomize(runFunc(atomize(FUNCID, Env), atomize(INPUT, Env)), Env);
+			runFunc(atomize(FUNCID, Env), atomize(INPUT, Env), Env);
 		{idExp, VarExp} -> 
 			%io:format("lookup ~w~n", [VarExp]),
 			atomize(termVal(VarExp, Env), Env);
@@ -115,6 +119,10 @@ termVal({E, {num, _, V}}) ->
 		numExp -> numVal2Num({num, V});
 		_ -> error
 	end.
-runFunc(FUNC, ARG) ->
-	
-	ok.
+runFunc(RAWFUNC, ARG, Dict) ->
+	case RAWFUNC of 
+		{packaged, FUNC, _} ->
+			run_procedure_here;
+		_ ->
+			ARG
+	end.
