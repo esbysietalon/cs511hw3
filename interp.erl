@@ -1,5 +1,6 @@
 -module(interp).
--export([scanAndParse/1,runFile/1,runStr/1]).
+%-export([scanAndParse/1,runFile/1,runStr/1]).
+-compile(export_all).
 -include("types.hrl").
 
 loop(InFile,Acc) ->
@@ -50,5 +51,33 @@ boolVal2Bool({bool, B}) ->
 
 -spec valueOf(expType(),envType()) -> valType().
 valueOf(Exp,Env) ->
-    io:format("Not implemented!").
-    %% complete
+	io:format("~w~n", [Exp]),
+	atomize(Exp, Env).
+	%% complete
+atomize(Exp, Env) ->
+	case Exp of
+		{letExp, {id, _N0, V0}, VarVal, InArgs} ->
+			Env0 = env:add(Env, V0, atomize(VarVal, Env)),
+			atomize(InArgs, Env0);
+		{idExp, VarExp} -> 
+			%io:format("lookup ~w~n", [VarExp]),
+			termVal(VarExp, Env);
+		{plusExp, ADDEND1, ADDEND2} -> atomize(ADDEND1, Env)+atomize(ADDEND2, Env);
+		{numExp, _} -> termVal(Exp);
+		_ ->
+			%io:format("unknown_expression! ~w~n", [Exp]),
+			unknown_expression
+	end.
+termVal({id, _N, V}, Env) ->
+	case env:lookup(Env, V) of
+		{bool, false} -> undefined_variable;
+		_ -> 
+			%io:format("termval lookup ~w~n", [env:lookup(Env, V)]),
+			env:lookup(Env, V)
+	end.
+termVal({E, {num, _, V}}) ->
+	case E of 
+		numExp -> numVal2Num({num, V});
+		_ -> error
+	end.
+		
