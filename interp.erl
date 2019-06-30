@@ -121,8 +121,9 @@ termVal({E, {num, _, V}}) ->
 	end.
 runFunc(RAWFUNC, ARG, Dict) ->
 	case RAWFUNC of 
-		{packaged, FUNC, _} ->
-			run_procedure_here;
+		{packaged, {procExp, {id, _, V}, OPERATION}, _} ->
+			Dict0 = env:add(Dict, V, ARG),
+			atomize(OPERATION, Dict0);
 		_ ->
 			ARG
 	end.
