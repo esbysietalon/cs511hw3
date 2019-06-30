@@ -1,6 +1,6 @@
 -module(interp).
-%-export([scanAndParse/1,runFile/1,runStr/1]).
--compile(export_all).
+-export([scanAndParse/1,runFile/1,runStr/1]).
+%-compile(export_all).
 -include("types.hrl").
 
 loop(InFile,Acc) ->
@@ -80,11 +80,13 @@ isProc(Exp) ->
 getProc({procExp, {id, _, V}, FUNCEXP}, Env) ->
 		{proc, V, FUNCEXP, Env}.
 atomize(Exp, Env) ->
+	%io:format("Exp is ~w~n", [Exp]),
 	case Exp of
 		{packaged, GenExp, _} ->
 			%io:format("unpackaging~n", []),
 			atomize(GenExp, Env);
 		{letExp, {id, _N0, V0}, VarVal, InArgs} ->
+			%io:format("VarVal is ~w~n", [VarVal]),
 			Env0 = env:add(Env, V0, atomize(VarVal, Env)),
 			atomize(InArgs, Env0);
 		{isZeroExp, ARGEXP} ->
@@ -125,9 +127,10 @@ termVal({id, _N, V}, Env) ->
 			%io:format("termval lookup ~w~n", [env:lookup(Env, V)]),
 			env:lookup(Env, V)
 	end.
-termVal({E, {num, _, V}}) ->
+termVal({E, {_ID, _, V}}) ->
 	case E of 
 		numExp -> numVal2Num({num, V});
+		boolExp -> boolVal2Bool({bool, V});
 		_ -> error
 	end.
 runFunc(RAWFUNC, ARG, Dict) ->
