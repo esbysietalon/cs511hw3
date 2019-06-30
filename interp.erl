@@ -52,21 +52,56 @@ boolVal2Bool({bool, B}) ->
 -spec valueOf(expType(),envType()) -> valType().
 valueOf(Exp,Env) ->
 	io:format("~w~n", [Exp]),
-	atomize(Exp, Env).
+	case atomize(Exp, Env) of
+		{packaged, O, D} ->
+			OUTPUT = O,
+			Dict = D;
+		_ -> 
+			OUTPUT = atomize(Exp, Env),
+			Dict = env:new()
+	end,
+	case is_number(OUTPUT) of
+		true -> {num, OUTPUT};
+		false -> 
+			case is_boolean(OUTPUT) of
+				true -> {bool, OUTPUT};
+				false -> 
+					case isProc(OUTPUT) of 
+						true -> getProc(OUTPUT, Dict);
+						false -> OUTPUT
+					end
+			end
+	end.
 	%% complete
+isProc(Exp) ->
+	case Exp of 
+		{procExp, {id, _, V}, _} -> true;
+		_ -> false
+	end.
+getProc({procExp, {id, _, V}, FUNCEXP}, Env) ->
+		{proc, V, FUNCEXP, Env}.
 atomize(Exp, Env) ->
 	case Exp of
+		{packaged, GenExp, Env} ->
+			io:format("unpackaging~n", []),
+			atomize(GenExp, Env);
 		{letExp, {id, _N0, V0}, VarVal, InArgs} ->
 			Env0 = env:add(Env, V0, atomize(VarVal, Env)),
 			atomize(InArgs, Env0);
+		{procExp, IDEXP, FUNCEXP} ->
+			%proc already stores this well
+			{packaged, Exp, Env};
+		{appExp, FUNCID, INPUT} ->
+			atomize(runFunc(atomize(FUNCID, Env), atomize(INPUT, Env)), Env);
 		{idExp, VarExp} -> 
 			%io:format("lookup ~w~n", [VarExp]),
-			termVal(VarExp, Env);
+			atomize(termVal(VarExp, Env), Env);
 		{plusExp, ADDEND1, ADDEND2} -> atomize(ADDEND1, Env)+atomize(ADDEND2, Env);
+		{diffExp, ADDEND1, ADDEND2} -> atomize(ADDEND1, Env)-atomize(ADDEND2, Env);
 		{numExp, _} -> termVal(Exp);
 		_ ->
 			%io:format("unknown_expression! ~w~n", [Exp]),
-			unknown_expression
+			Exp
 	end.
 termVal({id, _N, V}, Env) ->
 	case env:lookup(Env, V) of
@@ -80,4 +115,6 @@ termVal({E, {num, _, V}}) ->
 		numExp -> numVal2Num({num, V});
 		_ -> error
 	end.
-		
+runFunc(FUNC, ARG) ->
+	
+	ok.
