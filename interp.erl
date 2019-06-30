@@ -74,7 +74,7 @@ valueOf(Exp,Env) ->
 	%% complete
 isProc(Exp) ->
 	case Exp of 
-		{procExp, {id, _, V}, _} -> true;
+		{procExp, {id, _, _V}, _} -> true;
 		_ -> false
 	end.
 getProc({procExp, {id, _, V}, FUNCEXP}, Env) ->
@@ -92,11 +92,22 @@ atomize(Exp, Env) ->
 				0 -> true;
 				_ -> false
 			end;
-		{procExp, IDEXP, FUNCEXP} ->
+		{procExp, _IDEXP, _FUNCEXP} ->
 			%proc already stores this well
 			{packaged, Exp, Env};
 		{appExp, FUNCID, INPUT} ->
 			runFunc(atomize(FUNCID, Env), atomize(INPUT, Env), Env);
+		{ifThenElseExp, CONDEXP, IFEXP, ELSEEXP} ->
+			case atomize(CONDEXP, Env) of
+				true ->
+					atomize(IFEXP, Env);
+				false ->
+					atomize(ELSEEXP, Env);
+				_ ->
+					%what if the result of CONDEXP is not a boolean?
+					%does what is in else for now
+					atomize(ELSEEXP, Env)
+			end;
 		{idExp, VarExp} -> 
 			%io:format("lookup ~w~n", [VarExp]),
 			atomize(termVal(VarExp, Env), Env);
