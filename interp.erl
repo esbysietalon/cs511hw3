@@ -18,7 +18,7 @@ scanAndParse(FileName) ->
     Acc = loop(InFile,[]),
     file:close(InFile),
     {Result, AST} = parser:parse(Acc),
-    case Result of 
+    case Result of
 	ok -> AST;
 	_ -> io:format("Parse error~n")
     end.
@@ -35,7 +35,7 @@ scanAndParseString(String) ->
 -spec runStr(string()) -> valType().
 runStr(String) ->
     {Result, AST} = scanAndParseString(String),
-    case Result  of 
+    case Result  of
     	ok -> valueOf(AST,env:new());
     	_ -> io:format("Parse error~n")
     end.
@@ -55,30 +55,39 @@ valueOf(Exp,Env) ->
 		{packaged, O, D} ->
 			OUTPUT = O,
 			Dict = D;
-		_ -> 
+		_ ->
 			OUTPUT = atomize(Exp, Env),
 			Dict = env:new()
 	end,
 	case is_number(OUTPUT) of
-		true -> {num, OUTPUT};
-		false -> 
+		true ->
+               {num, OUTPUT};
+		false ->
 			case is_boolean(OUTPUT) of
-				true -> {bool, OUTPUT};
-				false -> 
-					case isProc(OUTPUT) of 
-						true -> getProc(OUTPUT, Dict);
-						false -> OUTPUT
+				true ->
+                         {bool, OUTPUT};
+				false ->
+					case isProc(OUTPUT) of
+						true ->
+                                   getProc(OUTPUT, Dict);
+						false ->
+                                   OUTPUT
 					end
 			end
 	end.
 	%% complete
+
 isProc(Exp) ->
-	case Exp of 
-		{procExp, {id, _, _V}, _} -> true;
-		_ -> false
+	case Exp of
+		{procExp, {id, _, _V}, _} ->
+               true;
+		_ ->
+               false
 	end.
+
 getProc({procExp, {id, _, V}, FUNCEXP}, Env) ->
 		{proc, V, FUNCEXP, Env}.
+
 atomize(Exp, Env) ->
 	%io:format("Exp is ~w~n", [Exp]),
 	case Exp of
@@ -91,8 +100,10 @@ atomize(Exp, Env) ->
 			atomize(InArgs, Env0);
 		{isZeroExp, ARGEXP} ->
 			case atomize(ARGEXP, Env) of
-				0 -> true;
-				_ -> false
+				0 ->
+                         true;
+				_ ->
+                         false
 			end;
 		{procExp, _IDEXP, _FUNCEXP} ->
 			%proc already stores this well
@@ -110,31 +121,40 @@ atomize(Exp, Env) ->
 					%does what is in else for now
 					atomize(ELSEEXP, Env)
 			end;
-		{idExp, VarExp} -> 
+		{idExp, VarExp} ->
 			%io:format("lookup ~w~n", [VarExp]),
 			atomize(termVal(VarExp, Env), Env);
-		{plusExp, ADDEND1, ADDEND2} -> atomize(ADDEND1, Env)+atomize(ADDEND2, Env);
-		{diffExp, ADDEND1, ADDEND2} -> atomize(ADDEND1, Env)-atomize(ADDEND2, Env);
-		{numExp, _} -> termVal(Exp);
+		{plusExp, ADDEND1, ADDEND2} ->
+               atomize(ADDEND1, Env)+atomize(ADDEND2, Env);
+		{diffExp, ADDEND1, ADDEND2} ->
+               atomize(ADDEND1, Env)-atomize(ADDEND2, Env);
+		{numExp, _} ->
+               termVal(Exp);
 		_ ->
 			%io:format("unknown_expression! ~w~n", [Exp]),
 			Exp
 	end.
+
 termVal({id, _N, V}, Env) ->
 	case env:lookup(Env, V) of
-		{bool, false} -> undefined_variable;
-		_ -> 
+		{bool, false} ->
+               undefined_variable;
+		_ ->
 			%io:format("termval lookup ~w~n", [env:lookup(Env, V)]),
 			env:lookup(Env, V)
 	end.
 termVal({E, {_ID, _, V}}) ->
-	case E of 
-		numExp -> numVal2Num({num, V});
-		boolExp -> boolVal2Bool({bool, V});
-		_ -> error
+	case E of
+		numExp ->
+               numVal2Num({num, V});
+		boolExp ->
+               boolVal2Bool({bool, V});
+		_ ->
+               error
 	end.
+
 runFunc(RAWFUNC, ARG, Dict) ->
-	case RAWFUNC of 
+	case RAWFUNC of
 		{packaged, {procExp, {id, _, V}, OPERATION}, _} ->
 			Dict0 = env:add(Dict, V, ARG),
 			atomize(OPERATION, Dict0);
